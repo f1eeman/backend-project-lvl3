@@ -1,4 +1,3 @@
-import { test, expect } from '@jest/globals';
 import f from '../index.js';
 
 test('example', () => {
