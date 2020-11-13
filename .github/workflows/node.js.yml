@@ -19,6 +19,9 @@ jobs:
           make install
       env:
         CI: true
-    - name: Run linte
+    - name: Run linter
       run: |
           make lint
+    - name: Run tests
+      run: |
+          make test
