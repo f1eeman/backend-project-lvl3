@@ -1,1 +1,1 @@
-export default (num) => num;
+export default (num) => num * 2;
