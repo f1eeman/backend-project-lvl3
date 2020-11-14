@@ -2,7 +2,10 @@
   "name": "@hexlet/code",
   "version": "1.0.0",
   "description": "this command-line utility downloads pages from the Internet and saves them to your computer. ",
-  "main": "index.js",
+  "main": "src/index.js",
+  "bin": {
+    "page-loader": "bin/page-loader.js"
+  },
   "scripts": {
     "test": "npx -n --experimental-vm-modules -n --no-warnings jest"
   },
@@ -22,7 +25,9 @@
   },
   "homepage": "https://github.com/f1eeman/backend-project-lvl3#readme",
   "dependencies": {
-    "axios": "^0.21.0"
+    "axios": "^0.21.0",
+    "commander": "^6.2.0",
+    "lodash": "^4.17.20"
   },
   "devDependencies": {
     "@jest/globals": "^26.6.2",
