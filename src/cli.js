@@ -8,7 +8,11 @@ const showCliInfo = () => {
     .option('--output [path]', 'directory for data downloading', `${process.cwd()}`)
     .arguments('<address>')
     .action((address) => {
-      downloadPage(address, program.output);
+      if (program.output === process.cwd()) {
+        downloadPage(address, program.output);
+      } else {
+        downloadPage(address, `${process.cwd()}${program.output}`);
+      }
     });
   program.parse(process.argv);
 };
