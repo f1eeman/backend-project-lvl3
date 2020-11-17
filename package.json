@@ -26,8 +26,10 @@
   "homepage": "https://github.com/f1eeman/backend-project-lvl3#readme",
   "dependencies": {
     "axios": "^0.21.0",
+    "cheerio": "^1.0.0-rc.3",
     "commander": "^6.2.0",
-    "lodash": "^4.17.20"
+    "lodash": "^4.17.20",
+    "prettier": "2.1.2"
   },
   "devDependencies": {
     "@jest/globals": "^26.6.2",
