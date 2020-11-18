@@ -73,6 +73,7 @@ test('fetchData', async () => {
   const [, resourcesDirectory] = files;
   const resourcesDirectoryPath = `${tempDir}/${resourcesDirectory}`;
   const resources = await fsp.readdir(resourcesDirectoryPath);
+  console.log('resources', resources);
   expect(resources).toHaveLength(11);
   expect(files).toHaveLength(2);
   expect(data).toEqual(expected);
