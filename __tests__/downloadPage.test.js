@@ -37,10 +37,6 @@ beforeEach(async () => {
   });
 });
 
-beforeAll(async () => {
-
-});
-
 test('fetchData', async () => {
   nock('https://www.drive.ru')
     .get('/')
