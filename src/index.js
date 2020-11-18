@@ -6,8 +6,9 @@ import cheerio from 'cheerio';
 import prettier from 'prettier';
 
 const getPath = (catalog, fileName) => path.join(catalog, fileName);
+
 const createName = (link) => {
-  const { path: fullPath, host } = url.parse(link);
+  const { path: fullPath, host } = url.parse(link, true);
   const fileName = `${host}${fullPath}`
     .split(/[^A-Za-z0-9]/)
     .filter((el) => el !== '')
@@ -16,6 +17,64 @@ const createName = (link) => {
 };
 const modifyName = (name, value) => name.concat(value);
 
+const isRelativePath = (link) => {
+  const { protocol } = url.parse(link, true);
+  return protocol === null;
+};
+
+const createAbsolutelyPath = (root, link) => {
+  const linkData = url.parse(link, true);
+  const rootData = url.parse(root, true);
+  return url.format({ ...rootData, path: linkData.path, pathname: linkData.pathname });
+};
+
+const downloadOtherResources = (html, rootAddress, directoryPath, resourcesDirectoryName) => {
+  const changeAttributeValue = (cheerioFunc, tagElement, ref, attr) => {
+    console.log('ref', ref);
+    const lastIndexOfSlash = ref.lastIndexOf('/');
+    const resourceName = ref.slice(lastIndexOfSlash + 1);
+    console.log('resourceName', resourceName);
+    const [formattedResourceName] = resourceName.match(/.+(css|js|ico|png)/);
+    console.log('formattedResourceName', formattedResourceName);
+    cheerioFunc(tagElement).attr(attr, getPath(resourcesDirectoryName, formattedResourceName));
+    const formattedLink = createAbsolutelyPath(rootAddress, ref);
+    console.log('formattedLink', formattedLink);
+    axios({
+      method: 'get',
+      url: formattedLink,
+      responseType: formattedResourceName.search(/(png|ico)/) > 0 ? 'arraybuffer' : 'text',
+    })
+      .then(({ data }) => {
+        const resourcePath = getPath(directoryPath, formattedResourceName);
+        return fsp.writeFile(resourcePath, data);
+      });
+  };
+  const $ = cheerio.load(html, {
+    normalizeWhitespace: true,
+    decodeEntities: false,
+  });
+  $('link').each((i, tag) => {
+    const attribute = 'href';
+    const link = $(tag).attr(attribute);
+    if (isRelativePath(link)) {
+      changeAttributeValue($, tag, link, attribute);
+    }
+  });
+  $('script').each((i, tag) => {
+    const attribute = 'src';
+    const link = $(tag).attr(attribute);
+
+    if (link && link.slice(0, 2) !== '//' && isRelativePath(link)) {
+      changeAttributeValue($, tag, link, attribute);
+    }
+    if (link && link.slice(0, 2) === '//') {
+      $(tag).attr(attribute, url.format({ ...url.parse(link), protocol: 'https' }));
+    }
+  });
+  const formattedHtml = prettier.format($.html(), { parser: 'html' });
+  return formattedHtml;
+};
+
 const downloadImages = (html, directoryPath, resourcesDirectoryName) => {
   const $ = cheerio.load(html, {
     normalizeWhitespace: true,
@@ -23,8 +82,8 @@ const downloadImages = (html, directoryPath, resourcesDirectoryName) => {
   });
   $('img').each((i, el) => {
     const link = $(el).attr('src');
-    // eslint-disable-next-line no-useless-escape
-    const [imageName] = link.match(/([^\/]+)\/?$/);
+    const lastIndexOfSlash = link.lastIndexOf('/');
+    const imageName = link.slice(lastIndexOfSlash + 1);
     const imageExtensions = /(jpg|jpeg|svg|webp|png|gif)/;
     const newImageName = imageExtensions.test(imageName) ? imageName : imageName.concat('.jpg');
     $(el).attr('src', getPath(resourcesDirectoryName, newImageName));
@@ -71,6 +130,9 @@ const downloadPage = (address, directory) => axios.get(address)
       throw e;
     })
     .then(() => downloadImages(data, pageResourcesDirectoryPath, pageResourcesDirectoryName))
+    .then((editedHTML) => downloadOtherResources(
+      editedHTML, address, pageResourcesDirectoryPath, pageResourcesDirectoryName,
+    ))
     .then((newHtml) => fsp.writeFile(htmlPath, newHtml)))
   .then(() => console.log('Operation has finished'));
 

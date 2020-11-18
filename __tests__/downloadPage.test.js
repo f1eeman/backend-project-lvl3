@@ -37,10 +37,22 @@ beforeEach(async () => {
   });
 });
 
+beforeAll(async () => {
+
+});
+
 test('fetchData', async () => {
   nock('https://www.drive.ru')
     .get('/')
-    .reply(200, responce);
+    .reply(200, responce)
+    .get('/css/likely.css')
+    .reply(200, 'someCode')
+    .get('/css/likely.css')
+    .reply(200, 'some css code')
+    .get('/js/adfox.asyn.code.ver3.js')
+    .reply(200, 'some js code')
+    .get('/js/jquery.fancybox.min.js')
+    .reply(200, 'some js code');
   nock('https://img.drive.ru')
     .get('/i/3/1')
     .reply(200, img)
@@ -62,10 +74,10 @@ test('fetchData', async () => {
   const [fileName] = await fsp.readdir(tempDir);
   const data = await fsp.readFile(path.join(tempDir, fileName), 'utf-8');
   const files = await fsp.readdir(tempDir);
-  const [, imagesDirectory] = files;
-  const imagesDirectoryPath = `${tempDir}/${imagesDirectory}`;
-  const images = await fsp.readdir(imagesDirectoryPath);
-  expect(images).toHaveLength(8);
+  const [, resourcesDirectory] = files;
+  const resourcesDirectoryPath = `${tempDir}/${resourcesDirectory}`;
+  const resources = await fsp.readdir(resourcesDirectoryPath);
+  expect(resources).toHaveLength(11);
   expect(files).toHaveLength(2);
   expect(data).toEqual(expected);
 });
