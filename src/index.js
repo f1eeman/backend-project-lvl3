@@ -4,6 +4,10 @@ import fs, { promises as fsp } from 'fs';
 import path from 'path';
 import cheerio from 'cheerio';
 import prettier from 'prettier';
+import debug from 'debug';
+// import 'axios-debug-log';
+
+const log = debug('pageloader');
 
 const getPath = (catalog, fileName) => path.join(catalog, fileName);
 
@@ -30,15 +34,11 @@ const createAbsolutelyPath = (root, link) => {
 
 const downloadOtherResources = (html, rootAddress, directoryPath, resourcesDirectoryName) => {
   const changeAttributeValue = (cheerioFunc, tagElement, ref, attr) => {
-    console.log('ref', ref);
     const lastIndexOfSlash = ref.lastIndexOf('/');
     const resourceName = ref.slice(lastIndexOfSlash + 1);
-    console.log('resourceName', resourceName);
     const [formattedResourceName] = resourceName.match(/.+(css|js|ico|png)/);
-    console.log('formattedResourceName', formattedResourceName);
     cheerioFunc(tagElement).attr(attr, getPath(resourcesDirectoryName, formattedResourceName));
     const formattedLink = createAbsolutelyPath(rootAddress, ref);
-    console.log('formattedLink', formattedLink);
     axios({
       method: 'get',
       url: formattedLink,
@@ -103,6 +103,7 @@ const downloadImages = (html, directoryPath, resourcesDirectoryName) => {
 
 const downloadPage = (address, directory) => axios.get(address)
   .then(({ data }) => {
+    log('Operation has started');
     const rootName = createName(address);
     const htmlExtension = '.html';
     const htmlName = modifyName(rootName, htmlExtension);
@@ -134,6 +135,6 @@ const downloadPage = (address, directory) => axios.get(address)
       editedHTML, address, pageResourcesDirectoryPath, pageResourcesDirectoryName,
     ))
     .then((newHtml) => fsp.writeFile(htmlPath, newHtml)))
-  .then(() => console.log('Operation has finished'));
+  .then(() => log('Operation has finished'));
 
 export default downloadPage;
