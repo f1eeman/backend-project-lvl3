@@ -85,3 +85,10 @@ test('the fetch fails with an error', async () => {
     .reply(404);
   await expect(downloadPage(fakeUrl2, tempDir)).rejects.toThrow('Request failed with status code 404');
 });
+
+test('specifying a nonexistent directory as the page download directory', async () => {
+  nock('https://www.drive.ru')
+    .get('/')
+    .reply(200, responce);
+  await expect(downloadPage(url, 'tmp/dir')).rejects.toThrow();
+});

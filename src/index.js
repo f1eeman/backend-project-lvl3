@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 import axios from 'axios';
 import url from 'url';
-import fs, { promises as fsp } from 'fs';
+import { promises as fsp } from 'fs';
 import path from 'path';
 import cheerio from 'cheerio';
 import prettier from 'prettier';
@@ -124,31 +124,44 @@ const downloadPage = (address, directory) => axios.get(address)
     htmlPath,
     pageResourcesDirectoryPath,
     pageResourcesDirectoryName,
-  }) => fsp.access(pageResourcesDirectoryPath, fs.constants.F_OK)
-    .catch((e) => {
-      if (e.code === 'ENOENT') {
-        return fsp.mkdir(pageResourcesDirectoryPath, { recursive: true });
-      }
-      throw e;
-    })
-    .then(() => downloadImages(data, pageResourcesDirectoryPath, pageResourcesDirectoryName))
-    .then((editedHTML) => downloadOtherResources(
-      editedHTML, address, pageResourcesDirectoryPath, pageResourcesDirectoryName,
-    ))
-    .then((newHtml) => fsp.writeFile(htmlPath, newHtml)))
+  }) => fsp.mkdir(pageResourcesDirectoryPath)
+    .then(() => {
+      const editedHTML = downloadImages(
+        data, pageResourcesDirectoryPath, pageResourcesDirectoryName,
+      );
+      const newHtml = downloadOtherResources(
+        editedHTML, address, pageResourcesDirectoryPath, pageResourcesDirectoryName,
+      );
+      return fsp.writeFile(htmlPath, newHtml);
+    }))
   .then(() => log('Operation has finished'))
   .catch((error) => {
     console.error('Oops! Something went wrong');
-    if (error.code === 'ENOTFOUND') {
-      console.error('status-code: ', error.code);
-      console.error('The requested page does not exist');
-    } else {
-      const { response: { status, statusText, config } } = error;
-      console.log(error);
-      console.error('status-code: ', status);
-      console.error('status-text: ', statusText);
-      console.error('link you are trying to download data from: ', config.url);
-      console.error('the link you are trying to download data from was not found');
+    console.log('!!!!!!!!!!!!!!!!', error.code);
+    switch (error.code) {
+      case 'ENOTFOUND': {
+        console.error('status-code: ', error.code);
+        console.error('The requested page does not exist');
+        break;
+      }
+      case 'ENOENT': {
+        console.error('status-code: ', error.code);
+        console.error('there was a problem with the file or directory path');
+        break;
+      }
+      case 'ENOTDIR': {
+        console.error('status-code: ', error.code);
+        console.error('you are trying to apply directory operations to a file');
+        break;
+      }
+      default: {
+        const { response: { status, statusText, config } } = error;
+        console.error('status-code: ', status);
+        console.error('status-text: ', statusText);
+        console.error('link you are trying to download data from: ', config.url);
+        console.error('the link you are trying to download data from was not found');
+        break;
+      }
     }
     throw error;
   });
