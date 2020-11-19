@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import axios from 'axios';
 import url from 'url';
 import fs, { promises as fsp } from 'fs';
@@ -135,6 +136,21 @@ const downloadPage = (address, directory) => axios.get(address)
       editedHTML, address, pageResourcesDirectoryPath, pageResourcesDirectoryName,
     ))
     .then((newHtml) => fsp.writeFile(htmlPath, newHtml)))
-  .then(() => log('Operation has finished'));
+  .then(() => log('Operation has finished'))
+  .catch((error) => {
+    console.error('Oops! Something went wrong');
+    if (error.code === 'ENOTFOUND') {
+      console.error('status-code: ', error.code);
+      console.error('The requested page does not exist');
+    } else {
+      const { response: { status, statusText, config } } = error;
+      console.log(error);
+      console.error('status-code: ', status);
+      console.error('status-text: ', statusText);
+      console.error('link you are trying to download data from: ', config.url);
+      console.error('the link you are trying to download data from was not found');
+    }
+    throw error;
+  });
 
 export default downloadPage;

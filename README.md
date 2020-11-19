@@ -4,3 +4,9 @@
 
 ### Hexlet tests and linter status:
 ![Actions Status](/workflows/hexlet-check/badge.svg)
+
+PageLoader is a command-line utility that downloads pages from the Internet and saves them to your computer. Together with the page, it downloads all resources (images, styles, and js), allowing you to open the page without the Internet.
+
+The same principle applies to saving pages in the browser
+
+Example of use:

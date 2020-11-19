@@ -16,6 +16,7 @@ nock.disableNetConnect();
 const getFilePath = (fileName) => path.join(__dirname, '..', '__fixtures__', fileName);
 const readFile = (filePath) => fsp.readFile(filePath, 'utf8');
 const url = 'https://www.drive.ru';
+const fakeUrl2 = 'https://www.drive.ru/cvxa';
 const responseHtml = readFile(getFilePath('responce.html'));
 const imageJpg = readFile(getFilePath('img.jpg'));
 const resultHtml = readFile(getFilePath('result.html'));
@@ -76,4 +77,11 @@ test('fetchData', async () => {
   expect(resources).toHaveLength(11);
   expect(files).toHaveLength(2);
   expect(data).toEqual(expected);
+});
+
+test('the fetch fails with an error', async () => {
+  nock('https://www.drive.ru')
+    .get('/cvxa')
+    .reply(404);
+  await expect(downloadPage(fakeUrl2, tempDir)).rejects.toThrow('Request failed with status code 404');
 });
