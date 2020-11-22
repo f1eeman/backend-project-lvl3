@@ -43,13 +43,13 @@ const createAbsolutelyPath = (root, link) => {
   return url.format({ ...rootData, path: linkData.path, pathname: linkData.pathname });
 };
 
-const modifyHtml = (html, resourcesDirectoryName) => {
+const modifyHtml = (html, resourcesDirectoryName, rootName) => {
   const $ = cheerio.load(html, {
     normalizeWhitespace: true,
     decodeEntities: false,
   });
   const changeAttributeValue = (tagElement, ref, property) => {
-    const resourceName = createAssetName(ref);
+    const resourceName = createAssetName(rootName, ref);
     $(tagElement).attr(property, getPath(resourcesDirectoryName, resourceName));
   };
   $('link').each((i, tag) => {
@@ -74,7 +74,8 @@ const modifyHtml = (html, resourcesDirectoryName) => {
     const link = $(tag).attr(attribute);
     changeAttributeValue(tag, link, attribute);
   });
-  const formattedHtml = prettier.format($.html(), { parser: 'html' });
+  const formatOptions = { parser: 'html', printWidth: 150, embeddedLanguageFormatting: 'off' };
+  const formattedHtml = prettier.format($.html(), formatOptions);
   return formattedHtml;
 };
 
@@ -139,7 +140,7 @@ const downloadPage = (address, downloadDirectory) => {
       links = getLinks(data, address);
     })
     .then(() => {
-      modifiedHtml = modifyHtml(html, assetsDirectoryName);
+      modifiedHtml = modifyHtml(html, assetsDirectoryName, rootName);
     })
     .then(() => fsp.writeFile(htmlPath, modifiedHtml))
     .then(() => fsp.mkdir(assetsDirectoryPath))
