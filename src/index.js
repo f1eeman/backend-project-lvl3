@@ -123,14 +123,19 @@ const getLinks = (html, address) => {
   return sharedLinks;
 };
 
-const downloadAsset = (link, directoryPath, resourceName) => axios({
-  method: 'get',
-  url: link,
-  responseType: link.search(imageExtentsions) > 0 ? 'arraybuffer' : 'text',
-}).then(({ data }) => {
-  const resourcePath = getPath(directoryPath, resourceName);
-  return fsp.writeFile(resourcePath, data);
-});
+const downloadAsset = (link, directoryPath, resourceName) => {
+  console.log('!!!!!!!!link', link);
+  console.log('!!!!!!!!link', resourceName);
+  return axios({
+    method: 'get',
+    url: link,
+    responseType: link.search(imageExtentsions) > 0 ? 'arraybuffer' : 'text',
+  }).then(({ data }) => {
+    const resourcePath = getPath(directoryPath, resourceName);
+    console.log('resourcePath', resourcePath);
+    return fsp.writeFile(resourcePath, data);
+  });
+};
 
 const downloadPage = (address, downloadDirectory) => {
   console.log('address', address);
