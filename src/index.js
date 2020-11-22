@@ -29,11 +29,11 @@ const createAssetName = (address, link) => {
     .split(/[^A-Za-z0-9]/)
     .filter((el) => el !== '')
     .join('-');
-  const indexLastDash = name.lastIndexOf('-');
-  const newName = `${name.slice(0, indexLastDash)}.${name.slice(indexLastDash + 1)}`;
   const regexp = /.+(jpg|jpeg|svg|webp|png|gif|ico|css|js)/;
-  const [resourceName] = newName.match(regexp) || [newName.concat('.html')];
-  return resourceName;
+  const [resourceName] = name.match(regexp) || [name.concat('-html')];
+  const indexLastDash = resourceName.lastIndexOf('-');
+  const newName = `${resourceName.slice(0, indexLastDash)}.${resourceName.slice(indexLastDash + 1)}`;
+  return newName;
 };
 
 const modifyName = (name, value) => name.concat(value);
