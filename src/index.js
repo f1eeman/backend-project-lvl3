@@ -133,6 +133,7 @@ const downloadAsset = (link, directoryPath, resourceName) => axios({
 });
 
 const downloadPage = (address, downloadDirectory) => {
+  console.log('address', address);
   const rootName = createName(address);
   const htmlExtension = '.html';
   const htmlName = modifyName(rootName, htmlExtension);
