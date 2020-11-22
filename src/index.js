@@ -46,6 +46,7 @@ const isRelativePath = (link) => {
 const isLocalResource = (address, link) => {
   const { host } = url.parse(link, true);
   const { host: rootHost } = url.parse(address, true);
+  console.log(host, rootHost);
   return host === rootHost;
 };
 
