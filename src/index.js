@@ -46,8 +46,10 @@ const isRelativePath = (link) => {
 const isLocalResource = (address, link) => {
   const { host } = url.parse(link, true);
   const { host: rootHost } = url.parse(address, true);
-  console.log('isLocalResource HOST', host);
+  console.log('isLocalResource address', address);
   console.log('isLocalResource rootHost', rootHost);
+  console.log('isLocalResource link', link);
+  console.log('isLocalResource HOST', host);
   return host === rootHost;
 };
 
@@ -99,12 +101,7 @@ const getLinks = (html, address) => {
   const linksElements = $('link').toArray();
   const imagesLinks = imagesElements
     .map(({ attribs }) => attribs.src)
-    .filter((link) => {
-      console.log('getLINKS___IMAGE', link);
-      console.log('getLINKS___IMAGE', address);
-      console.log('isLocalResource(address, link)', isLocalResource(address, link));
-      return isRelativePath(link) || isLocalResource(address, link);
-    })
+    .filter((link) => isRelativePath(link) || isLocalResource(address, link))
     .map((link) => createAbsolutelyPath(address, link));
   const scriptsLinks = scriptsElements
     .map(({ attribs }) => attribs.src)
@@ -115,17 +112,19 @@ const getLinks = (html, address) => {
     .filter((link) => {
       console.log('getLINKS___OTHER', link);
       console.log('getLINKS___OTHER', address);
-      console.log('isLocalResource(address, link)', isLocalResource(address, link));
+      console.log('getLINKS isLocalResource(address, link)', isLocalResource(address, link));
+      console.log('getLINKS isRelativePath(link)', isRelativePath(link));
       return isRelativePath(link) || isLocalResource(address, link);
     })
     .map((link) => createAbsolutelyPath(address, link));
   const sharedLinks = [...imagesLinks, ...scriptsLinks, ...otherLinks];
+  console.log('otherLinks', otherLinks);
   return sharedLinks;
 };
 
 const downloadAsset = (link, directoryPath, resourceName) => {
-  console.log('!!!!!!!!link', link);
-  console.log('!!!!!!!!resourceName', resourceName);
+  console.log('downloadAsset____link', link);
+  console.log('!downloadAsset___resourceName', resourceName);
   return axios({
     method: 'get',
     url: link,
@@ -138,7 +137,6 @@ const downloadAsset = (link, directoryPath, resourceName) => {
 };
 
 const downloadPage = (address, downloadDirectory) => {
-  console.log('address', address);
   const rootName = createName(address);
   const htmlExtension = '.html';
   const htmlName = modifyName(rootName, htmlExtension);
