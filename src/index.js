@@ -98,7 +98,12 @@ const getLinks = (html, address) => {
   const linksElements = $('link').toArray();
   const imagesLinks = imagesElements
     .map(({ attribs }) => attribs.src)
-    .filter((link) => isLocalResource(address, link))
+    .filter((link) => {
+      console.log('getLINKS___IMAGE', link);
+      console.log('getLINKS___IMAGE', address);
+      console.log('isLocalResource(address, link)', isLocalResource(address, link));
+      return isLocalResource(address, link);
+    })
     .map((link) => createAbsolutelyPath(address, link));
   const scriptsLinks = scriptsElements
     .map(({ attribs }) => attribs.src)
@@ -106,7 +111,12 @@ const getLinks = (html, address) => {
     .map((link) => createAbsolutelyPath(address, link));
   const otherLinks = linksElements
     .map(({ attribs }) => attribs.href)
-    .filter((link) => isLocalResource(address, link))
+    .filter((link) => {
+      console.log('getLINKS___OTHER', link);
+      console.log('getLINKS___OTHER', address);
+      console.log('isLocalResource(address, link)', isLocalResource(address, link));
+      return isLocalResource(address, link);
+    })
     .map((link) => createAbsolutelyPath(address, link));
   const sharedLinks = [...imagesLinks, ...scriptsLinks, ...otherLinks];
   return sharedLinks;
