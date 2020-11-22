@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
-import showCliInfo from '../src/cli.js';
+import pageLoaderCli from '../src/cli.js';
 
-showCliInfo();
+pageLoaderCli()
+  // eslint-disable-next-line no-console
+  .then((fileName) => console.log(`\nPage was downloaded as '${fileName}'`))
+  .then(() => process.exit(0))
+  .catch(() => process.exit(1));

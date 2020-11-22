@@ -90,7 +90,8 @@ const getLinks = (html, address) => {
     .map(({ attribs }) => attribs.src)
     .map((link) => {
       const newLink = link.search(imageExtentsions) > 0 ? link : link.concat('.jpg');
-      return newLink;
+      const { protocol } = url.parse(newLink);
+      return protocol !== null ? newLink : createAbsolutelyPath(address, link);
     });
   const scriptsLinks = scriptsElements
     .map(({ attribs }) => attribs.src)
@@ -103,6 +104,10 @@ const getLinks = (html, address) => {
     .map((link) => createAbsolutelyPath(address, link));
   const otherLinks = linksElements
     .map(({ attribs }) => attribs.href)
+    .filter((link) => {
+      const { protocol } = url.parse(link);
+      return protocol === null;
+    })
     .map((link) => createAbsolutelyPath(address, link));
   const sharedLinks = [...imagesLinks, ...scriptsLinks, ...otherLinks];
   return sharedLinks;
@@ -147,43 +152,10 @@ const downloadPage = (address, downloadDirectory) => {
           return downloadAsset(link, assetsDirectoryPath, assetName);
         },
       }));
-      const listr = new Listr(tasks);
+      const listr = new Listr(tasks, { concurrent: true });
       return listr.run();
     })
-    .catch((error) => {
-      console.error('Oops! Something went wrong');
-      switch (error.code) {
-        case 'ENOTFOUND': {
-          console.error('status-code: ', error.code);
-          console.error('The requested page does not exist');
-          break;
-        }
-        case 'ENOENT': {
-          console.error('status-code: ', error.code);
-          console.error('there was a problem with the file or directory path');
-          break;
-        }
-        case 'ENOTDIR': {
-          console.error('status-code: ', error.code);
-          console.error('you are trying to apply directory operations to a file');
-          break;
-        }
-        case 'EEXIST': {
-          console.error('status-code: ', error.code);
-          console.error('the file or directory with this name already exists');
-          break;
-        }
-        default: {
-          const { response: { status, statusText, config } } = error;
-          console.error('status-code: ', status);
-          console.error('status-text: ', statusText);
-          console.error('link you are trying to download data from: ', config.url);
-          console.error('the link you are trying to download data from was not found');
-          break;
-        }
-      }
-      throw error;
-    });
+    .then(() => htmlName);
 };
 
 export default downloadPage;
