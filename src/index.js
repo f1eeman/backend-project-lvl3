@@ -22,12 +22,18 @@ const createName = (link) => {
   return fileName;
 };
 
-const createAssetName = (rootName, link) => {
-  const indexOfLastSlash = link.lastIndexOf('/');
-  const partOflinkAfterLastSlash = link.slice(indexOfLastSlash + 1);
+const createAssetName = (address, link) => {
+  const { pathname } = url.parse(link, true);
+  const { host } = url.parse(address, true);
+  const name = `${host}/${pathname}`
+    .split(/[^A-Za-z0-9]/)
+    .filter((el) => el !== '')
+    .join('-');
+  const indexLastDash = name.lastIndexOf('-');
+  const newName = `${name.slice(0, indexLastDash)}.${name.slice(indexLastDash + 1)}`;
   const regexp = /.+(jpg|jpeg|svg|webp|png|gif|ico|css|js)/;
-  const [resourceName] = partOflinkAfterLastSlash.match(regexp) || [partOflinkAfterLastSlash.concat('.jpg')];
-  return `${rootName}-assets-${resourceName}`;
+  const [resourceName] = newName.match(regexp) || [newName.concat('.jpg')];
+  return resourceName;
 };
 
 const modifyName = (name, value) => name.concat(value);
@@ -43,13 +49,13 @@ const createAbsolutelyPath = (root, link) => {
   return url.format({ ...rootData, path: linkData.path, pathname: linkData.pathname });
 };
 
-const modifyHtml = (html, resourcesDirectoryName, rootName) => {
+const modifyHtml = (html, resourcesDirectoryName, address) => {
   const $ = cheerio.load(html, {
     normalizeWhitespace: true,
     decodeEntities: false,
   });
   const changeAttributeValue = (tagElement, ref, property) => {
-    const resourceName = createAssetName(rootName, ref);
+    const resourceName = createAssetName(address, ref);
     $(tagElement).attr(property, getPath(resourcesDirectoryName, resourceName));
   };
   $('link').each((i, tag) => {
@@ -140,7 +146,7 @@ const downloadPage = (address, downloadDirectory) => {
       links = getLinks(data, address);
     })
     .then(() => {
-      modifiedHtml = modifyHtml(html, assetsDirectoryName, rootName);
+      modifiedHtml = modifyHtml(html, assetsDirectoryName, address);
     })
     .then(() => fsp.writeFile(htmlPath, modifiedHtml))
     .then(() => fsp.mkdir(assetsDirectoryPath))
@@ -148,7 +154,7 @@ const downloadPage = (address, downloadDirectory) => {
       const tasks = links.map((link) => ({
         title: link,
         task: () => {
-          const assetName = createAssetName(rootName, link);
+          const assetName = createAssetName(address, link);
           return downloadAsset(link, assetsDirectoryPath, assetName);
         },
       }));

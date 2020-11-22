@@ -42,6 +42,18 @@ test('fetchData', async () => {
   nock('https://www.drive.ru')
     .get('/')
     .reply(200, responce)
+    .get('/img/3.jpeg')
+    .reply(200, img)
+    .get('/img/4.jpg')
+    .reply(200, img)
+    .get('/img/5.png')
+    .reply(200, img)
+    .get('/img/6.gif')
+    .reply(200, img)
+    .get('/img/7.svg')
+    .reply(200, img)
+    .get('/img/8.webp')
+    .reply(200, img)
     .get('/css/likely.css')
     .reply(200, 'someCode')
     .get('/css/likely.css')
@@ -50,21 +62,6 @@ test('fetchData', async () => {
     .reply(200, 'some js code')
     .get('/js/jquery.fancybox.min.js')
     .reply(200, 'some js code');
-  nock('https://img.drive.ru')
-    .get('/i/3/1.jpg')
-    .reply(200, img)
-    .get('/i/3/3.jpeg')
-    .reply(200, img)
-    .get('/i/3/4.jpg')
-    .reply(200, img)
-    .get('/i/3/5.png')
-    .reply(200, img)
-    .get('/i/3/6.gif')
-    .reply(200, img)
-    .get('/i/3/7.svg')
-    .reply(200, img)
-    .get('/i/3/8.webp')
-    .reply(200, img);
   await downloadPage(url, tempDir);
   const [fileName] = await fsp.readdir(tempDir);
   const data = await fsp.readFile(path.join(tempDir, fileName), 'utf-8');
@@ -72,7 +69,7 @@ test('fetchData', async () => {
   const [, resourcesDirectory] = files;
   const resourcesDirectoryPath = `${tempDir}/${resourcesDirectory}`;
   const resources = await fsp.readdir(resourcesDirectoryPath);
-  expect(resources).toHaveLength(10);
+  expect(resources).toHaveLength(9);
   expect(files).toHaveLength(2);
   expect(data).toEqual(expected);
 });
