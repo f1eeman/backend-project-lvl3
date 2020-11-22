@@ -46,7 +46,8 @@ const isRelativePath = (link) => {
 const isLocalResource = (address, link) => {
   const { host } = url.parse(link, true);
   const { host: rootHost } = url.parse(address, true);
-  console.log(host, rootHost);
+  console.log('isLocalResource HOST', host);
+  console.log('isLocalResource rootHost', rootHost);
   return host === rootHost;
 };
 
@@ -102,7 +103,7 @@ const getLinks = (html, address) => {
       console.log('getLINKS___IMAGE', link);
       console.log('getLINKS___IMAGE', address);
       console.log('isLocalResource(address, link)', isLocalResource(address, link));
-      return isLocalResource(address, link);
+      return isRelativePath(link) || isLocalResource(address, link);
     })
     .map((link) => createAbsolutelyPath(address, link));
   const scriptsLinks = scriptsElements
@@ -115,7 +116,7 @@ const getLinks = (html, address) => {
       console.log('getLINKS___OTHER', link);
       console.log('getLINKS___OTHER', address);
       console.log('isLocalResource(address, link)', isLocalResource(address, link));
-      return isLocalResource(address, link);
+      return isRelativePath(link) || isLocalResource(address, link);
     })
     .map((link) => createAbsolutelyPath(address, link));
   const sharedLinks = [...imagesLinks, ...scriptsLinks, ...otherLinks];
