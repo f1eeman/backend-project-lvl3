@@ -68,14 +68,14 @@ const modifyHtml = (html, resourcesDirectoryName, address) => {
   $('link').each((i, tag) => {
     const attribute = 'href';
     const link = $(tag).attr(attribute);
-    if (isRelativePath(link) && isLocalResource(address, link)) {
+    if (isRelativePath(link) || isLocalResource(address, link)) {
       changeAttributeValue(tag, link, attribute);
     }
   });
   $('script').each((i, tag) => {
     const attribute = 'src';
     const link = $(tag).attr(attribute);
-    if (isRelativePath(link) && isLocalResource(address, link)) {
+    if (isRelativePath(link) || isLocalResource(address, link)) {
       changeAttributeValue(tag, link, attribute);
     }
   });
