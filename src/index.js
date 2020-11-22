@@ -22,12 +22,12 @@ const createName = (link) => {
   return fileName;
 };
 
-const createAssetName = (link) => {
+const createAssetName = (rootName, link) => {
   const indexOfLastSlash = link.lastIndexOf('/');
   const partOflinkAfterLastSlash = link.slice(indexOfLastSlash + 1);
   const regexp = /.+(jpg|jpeg|svg|webp|png|gif|ico|css|js)/;
   const [resourceName] = partOflinkAfterLastSlash.match(regexp) || [partOflinkAfterLastSlash.concat('.jpg')];
-  return resourceName;
+  return `${rootName}-assets-${resourceName}`;
 };
 
 const modifyName = (name, value) => name.concat(value);
@@ -117,11 +117,10 @@ const downloadAsset = (link, directoryPath, resourceName) => axios({
   method: 'get',
   url: link,
   responseType: link.search(imageExtentsions) > 0 ? 'arraybuffer' : 'text',
-})
-  .then(({ data }) => {
-    const resourcePath = getPath(directoryPath, resourceName);
-    return fsp.writeFile(resourcePath, data);
-  });
+}).then(({ data }) => {
+  const resourcePath = getPath(directoryPath, resourceName);
+  return fsp.writeFile(resourcePath, data);
+});
 
 const downloadPage = (address, downloadDirectory) => {
   const rootName = createName(address);
@@ -148,7 +147,7 @@ const downloadPage = (address, downloadDirectory) => {
       const tasks = links.map((link) => ({
         title: link,
         task: () => {
-          const assetName = createAssetName(link);
+          const assetName = createAssetName(rootName, link);
           return downloadAsset(link, assetsDirectoryPath, assetName);
         },
       }));
