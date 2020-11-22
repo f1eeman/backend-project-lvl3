@@ -32,7 +32,7 @@ const createAssetName = (address, link) => {
   const indexLastDash = name.lastIndexOf('-');
   const newName = `${name.slice(0, indexLastDash)}.${name.slice(indexLastDash + 1)}`;
   const regexp = /.+(jpg|jpeg|svg|webp|png|gif|ico|css|js)/;
-  const [resourceName] = newName.match(regexp) || [newName.concat('.jpg')];
+  const [resourceName] = newName.match(regexp) || [newName.concat('.html')];
   return resourceName;
 };
 
@@ -41,6 +41,12 @@ const modifyName = (name, value) => name.concat(value);
 const isRelativePath = (link) => {
   const { protocol } = url.parse(link, true);
   return protocol === null;
+};
+
+const isLocalResource = (address, link) => {
+  const { host } = url.parse(link, true);
+  const { host: rootHost } = url.parse(address, true);
+  return host === rootHost;
 };
 
 const createAbsolutelyPath = (root, link) => {
@@ -61,18 +67,15 @@ const modifyHtml = (html, resourcesDirectoryName, address) => {
   $('link').each((i, tag) => {
     const attribute = 'href';
     const link = $(tag).attr(attribute);
-    if (isRelativePath(link)) {
+    if (isRelativePath(link) && isLocalResource(address, link)) {
       changeAttributeValue(tag, link, attribute);
     }
   });
   $('script').each((i, tag) => {
     const attribute = 'src';
     const link = $(tag).attr(attribute);
-    if (link && link.slice(0, 2) !== '//' && isRelativePath(link)) {
+    if (isRelativePath(link) && isLocalResource(address, link)) {
       changeAttributeValue(tag, link, attribute);
-    }
-    if (link && link.slice(0, 2) === '//') {
-      $(tag).attr(attribute, url.format({ ...url.parse(link), protocol: 'https' }));
     }
   });
   $('img').each((i, tag) => {
@@ -80,7 +83,6 @@ const modifyHtml = (html, resourcesDirectoryName, address) => {
     const link = $(tag).attr(attribute);
     changeAttributeValue(tag, link, attribute);
   });
-  const formatOptions = { parser: 'html', printWidth: 150, embeddedLanguageFormatting: 'off' };
   const formattedHtml = prettier.format($.html(), { parser: 'html', requirePragma: true });
   return formattedHtml;
 };
