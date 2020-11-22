@@ -5,10 +5,11 @@ import { promises as fsp } from 'fs';
 import path from 'path';
 import cheerio from 'cheerio';
 import prettier from 'prettier';
-import debug from 'debug';
+// import debug from 'debug';
 // import 'axios-debug-log';
+import Listr from 'listr';
 
-const log = debug('pageloader');
+const imageExtentsions = /(jpg|jpeg|svg|webp|png|gif|ico)/;
 
 const getPath = (catalog, fileName) => path.join(catalog, fileName);
 
@@ -20,6 +21,15 @@ const createName = (link) => {
     .join('-');
   return fileName;
 };
+
+const createAssetName = (link) => {
+  const indexOfLastSlash = link.lastIndexOf('/');
+  const partOflinkAfterLastSlash = link.slice(indexOfLastSlash + 1);
+  const regexp = /.+(jpg|jpeg|svg|webp|png|gif|ico|css|js)/;
+  const [resourceName] = partOflinkAfterLastSlash.match(regexp) || [partOflinkAfterLastSlash.concat('.jpg')];
+  return resourceName;
+};
+
 const modifyName = (name, value) => name.concat(value);
 
 const isRelativePath = (link) => {
@@ -33,137 +43,147 @@ const createAbsolutelyPath = (root, link) => {
   return url.format({ ...rootData, path: linkData.path, pathname: linkData.pathname });
 };
 
-const downloadOtherResources = (html, rootAddress, directoryPath, resourcesDirectoryName) => {
-  const changeAttributeValue = (cheerioFunc, tagElement, ref, attr) => {
-    const lastIndexOfSlash = ref.lastIndexOf('/');
-    const resourceName = ref.slice(lastIndexOfSlash + 1);
-    const [formattedResourceName] = resourceName.match(/.+(css|js|ico|png)/);
-    cheerioFunc(tagElement).attr(attr, getPath(resourcesDirectoryName, formattedResourceName));
-    const formattedLink = createAbsolutelyPath(rootAddress, ref);
-    axios({
-      method: 'get',
-      url: formattedLink,
-      responseType: formattedResourceName.search(/(png|ico)/) > 0 ? 'arraybuffer' : 'text',
-    })
-      .then(({ data }) => {
-        const resourcePath = getPath(directoryPath, formattedResourceName);
-        return fsp.writeFile(resourcePath, data);
-      });
-  };
+const modifyHtml = (html, resourcesDirectoryName) => {
   const $ = cheerio.load(html, {
     normalizeWhitespace: true,
     decodeEntities: false,
   });
+  const changeAttributeValue = (tagElement, ref, property) => {
+    const resourceName = createAssetName(ref);
+    $(tagElement).attr(property, getPath(resourcesDirectoryName, resourceName));
+  };
   $('link').each((i, tag) => {
     const attribute = 'href';
     const link = $(tag).attr(attribute);
     if (isRelativePath(link)) {
-      changeAttributeValue($, tag, link, attribute);
+      changeAttributeValue(tag, link, attribute);
     }
   });
   $('script').each((i, tag) => {
     const attribute = 'src';
     const link = $(tag).attr(attribute);
-
     if (link && link.slice(0, 2) !== '//' && isRelativePath(link)) {
-      changeAttributeValue($, tag, link, attribute);
+      changeAttributeValue(tag, link, attribute);
     }
     if (link && link.slice(0, 2) === '//') {
       $(tag).attr(attribute, url.format({ ...url.parse(link), protocol: 'https' }));
     }
   });
+  $('img').each((i, tag) => {
+    const attribute = 'src';
+    const link = $(tag).attr(attribute);
+    changeAttributeValue(tag, link, attribute);
+  });
   const formattedHtml = prettier.format($.html(), { parser: 'html' });
   return formattedHtml;
 };
 
-const downloadImages = (html, directoryPath, resourcesDirectoryName) => {
+const getLinks = (html, address) => {
   const $ = cheerio.load(html, {
     normalizeWhitespace: true,
     decodeEntities: false,
   });
-  $('img').each((i, el) => {
-    const link = $(el).attr('src');
-    const lastIndexOfSlash = link.lastIndexOf('/');
-    const imageName = link.slice(lastIndexOfSlash + 1);
-    const imageExtensions = /(jpg|jpeg|svg|webp|png|gif)/;
-    const newImageName = imageExtensions.test(imageName) ? imageName : imageName.concat('.jpg');
-    $(el).attr('src', getPath(resourcesDirectoryName, newImageName));
-    axios({
-      method: 'get',
-      url: link,
-      responseType: 'arraybuffer',
+  const imagesElements = $('img').toArray();
+  const scriptsElements = $('script').toArray();
+  const linksElements = $('link').toArray();
+  const imagesLinks = imagesElements
+    .map(({ attribs }) => attribs.src)
+    .map((link) => {
+      const newLink = link.search(imageExtentsions) > 0 ? link : link.concat('.jpg');
+      return newLink;
+    });
+  const scriptsLinks = scriptsElements
+    .map(({ attribs }) => attribs.src)
+    .filter((link) => link)
+    .filter((link) => link.slice(0, 2) !== '//')
+    .filter((link) => {
+      const { protocol } = url.parse(link);
+      return protocol === null;
     })
-      .then(({ data }) => {
-        const imagePath = getPath(directoryPath, newImageName);
-        return fsp.writeFile(imagePath, data);
-      });
-  });
-  const formattedHtml = prettier.format($.html(), { parser: 'html' });
-  return formattedHtml;
+    .map((link) => createAbsolutelyPath(address, link));
+  const otherLinks = linksElements
+    .map(({ attribs }) => attribs.href)
+    .map((link) => createAbsolutelyPath(address, link));
+  const sharedLinks = [...imagesLinks, ...scriptsLinks, ...otherLinks];
+  return sharedLinks;
 };
 
-const downloadPage = (address, directory) => axios.get(address)
+const downloadAsset = (link, directoryPath, resourceName) => axios({
+  method: 'get',
+  url: link,
+  responseType: link.search(imageExtentsions) > 0 ? 'arraybuffer' : 'text',
+})
   .then(({ data }) => {
-    log('Operation has started');
-    const rootName = createName(address);
-    const htmlExtension = '.html';
-    const htmlName = modifyName(rootName, htmlExtension);
-    const htmlPath = getPath(directory, htmlName);
-    const pageResourcesDirectoryNameLastWord = '_files';
-    const pageResourcesDirectoryName = modifyName(rootName, pageResourcesDirectoryNameLastWord);
-    const pageResourcesDirectoryPath = getPath(directory, pageResourcesDirectoryName);
-    return {
-      data,
-      htmlPath,
-      pageResourcesDirectoryPath,
-      pageResourcesDirectoryName,
-    };
-  })
-  .then(({
-    data,
-    htmlPath,
-    pageResourcesDirectoryPath,
-    pageResourcesDirectoryName,
-  }) => fsp.mkdir(pageResourcesDirectoryPath)
-    .then(() => {
-      const editedHTML = downloadImages(
-        data, pageResourcesDirectoryPath, pageResourcesDirectoryName,
-      );
-      const newHtml = downloadOtherResources(
-        editedHTML, address, pageResourcesDirectoryPath, pageResourcesDirectoryName,
-      );
-      return fsp.writeFile(htmlPath, newHtml);
-    }))
-  .then(() => log('Operation has finished'))
-  .catch((error) => {
-    console.error('Oops! Something went wrong');
-    console.log('!!!!!!!!!!!!!!!!', error.code);
-    switch (error.code) {
-      case 'ENOTFOUND': {
-        console.error('status-code: ', error.code);
-        console.error('The requested page does not exist');
-        break;
-      }
-      case 'ENOENT': {
-        console.error('status-code: ', error.code);
-        console.error('there was a problem with the file or directory path');
-        break;
-      }
-      case 'ENOTDIR': {
-        console.error('status-code: ', error.code);
-        console.error('you are trying to apply directory operations to a file');
-        break;
-      }
-      default: {
-        const { response: { status, statusText, config } } = error;
-        console.error('status-code: ', status);
-        console.error('status-text: ', statusText);
-        console.error('link you are trying to download data from: ', config.url);
-        console.error('the link you are trying to download data from was not found');
-        break;
-      }
-    }
-    throw error;
+    const resourcePath = getPath(directoryPath, resourceName);
+    return fsp.writeFile(resourcePath, data);
   });
+
+const downloadPage = (address, downloadDirectory) => {
+  const rootName = createName(address);
+  const htmlExtension = '.html';
+  const htmlName = modifyName(rootName, htmlExtension);
+  const htmlPath = getPath(downloadDirectory, htmlName);
+  const assetsDirectoryNamePostfix = '_files';
+  const assetsDirectoryName = modifyName(rootName, assetsDirectoryNamePostfix);
+  const assetsDirectoryPath = getPath(downloadDirectory, assetsDirectoryName);
+  let html;
+  let links;
+  let modifiedHtml;
+  return axios.get(address)
+    .then(({ data }) => {
+      html = data;
+      links = getLinks(data, address);
+    })
+    .then(() => {
+      modifiedHtml = modifyHtml(html, assetsDirectoryName);
+    })
+    .then(() => fsp.writeFile(htmlPath, modifiedHtml))
+    .then(() => fsp.mkdir(assetsDirectoryPath))
+    .then(() => {
+      const tasks = links.map((link) => ({
+        title: link,
+        task: () => {
+          const assetName = createAssetName(link);
+          return downloadAsset(link, assetsDirectoryPath, assetName);
+        },
+      }));
+      const listr = new Listr(tasks);
+      return listr.run();
+    })
+    .catch((error) => {
+      console.error('Oops! Something went wrong');
+      switch (error.code) {
+        case 'ENOTFOUND': {
+          console.error('status-code: ', error.code);
+          console.error('The requested page does not exist');
+          break;
+        }
+        case 'ENOENT': {
+          console.error('status-code: ', error.code);
+          console.error('there was a problem with the file or directory path');
+          break;
+        }
+        case 'ENOTDIR': {
+          console.error('status-code: ', error.code);
+          console.error('you are trying to apply directory operations to a file');
+          break;
+        }
+        case 'EEXIST': {
+          console.error('status-code: ', error.code);
+          console.error('the file or directory with this name already exists');
+          break;
+        }
+        default: {
+          const { response: { status, statusText, config } } = error;
+          console.error('status-code: ', status);
+          console.error('status-text: ', statusText);
+          console.error('link you are trying to download data from: ', config.url);
+          console.error('the link you are trying to download data from was not found');
+          break;
+        }
+      }
+      throw error;
+    });
+};
 
 export default downloadPage;

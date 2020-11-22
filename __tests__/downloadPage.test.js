@@ -51,9 +51,7 @@ test('fetchData', async () => {
     .get('/js/jquery.fancybox.min.js')
     .reply(200, 'some js code');
   nock('https://img.drive.ru')
-    .get('/i/3/1')
-    .reply(200, img)
-    .get('/i/3/2')
+    .get('/i/3/1.jpg')
     .reply(200, img)
     .get('/i/3/3.jpeg')
     .reply(200, img)
@@ -74,7 +72,7 @@ test('fetchData', async () => {
   const [, resourcesDirectory] = files;
   const resourcesDirectoryPath = `${tempDir}/${resourcesDirectory}`;
   const resources = await fsp.readdir(resourcesDirectoryPath);
-  expect(resources).toHaveLength(11);
+  expect(resources).toHaveLength(10);
   expect(files).toHaveLength(2);
   expect(data).toEqual(expected);
 });
