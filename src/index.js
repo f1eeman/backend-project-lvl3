@@ -81,7 +81,7 @@ const modifyHtml = (html, resourcesDirectoryName, address) => {
     changeAttributeValue(tag, link, attribute);
   });
   const formatOptions = { parser: 'html', printWidth: 150, embeddedLanguageFormatting: 'off' };
-  const formattedHtml = prettier.format($.html(), { requirePragma: true });
+  const formattedHtml = prettier.format($.html(), { parser: 'html', requirePragma: true });
   return formattedHtml;
 };
 
