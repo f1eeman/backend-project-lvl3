@@ -98,26 +98,15 @@ const getLinks = (html, address) => {
   const linksElements = $('link').toArray();
   const imagesLinks = imagesElements
     .map(({ attribs }) => attribs.src)
-    .map((link) => {
-      const newLink = link.search(imageExtentsions) > 0 ? link : link.concat('.jpg');
-      const { protocol } = url.parse(newLink);
-      return protocol !== null ? newLink : createAbsolutelyPath(address, link);
-    });
+    .filter((link) => isLocalResource(address, link))
+    .map((link) => createAbsolutelyPath(address, link));
   const scriptsLinks = scriptsElements
     .map(({ attribs }) => attribs.src)
-    .filter((link) => link)
-    .filter((link) => link.slice(0, 2) !== '//')
-    .filter((link) => {
-      const { protocol } = url.parse(link);
-      return protocol === null;
-    })
+    .filter((link) => isLocalResource(address, link))
     .map((link) => createAbsolutelyPath(address, link));
   const otherLinks = linksElements
     .map(({ attribs }) => attribs.href)
-    .filter((link) => {
-      const { protocol } = url.parse(link);
-      return protocol === null;
-    })
+    .filter((link) => isLocalResource(address, link))
     .map((link) => createAbsolutelyPath(address, link));
   const sharedLinks = [...imagesLinks, ...scriptsLinks, ...otherLinks];
   return sharedLinks;
@@ -125,7 +114,7 @@ const getLinks = (html, address) => {
 
 const downloadAsset = (link, directoryPath, resourceName) => {
   console.log('!!!!!!!!link', link);
-  console.log('!!!!!!!!link', resourceName);
+  console.log('!!!!!!!!resourceName', resourceName);
   return axios({
     method: 'get',
     url: link,
