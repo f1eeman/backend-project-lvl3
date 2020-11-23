@@ -7,8 +7,6 @@ import cheerio from 'cheerio';
 // import 'axios-debug-log';
 import Listr from 'listr';
 
-const imageExtentsions = /(jpg|jpeg|svg|webp|png|gif|ico)/;
-
 const getPath = (catalog, fileName) => path.join(catalog, fileName);
 
 const createName = (link) => {
