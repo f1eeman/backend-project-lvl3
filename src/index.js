@@ -1,10 +1,8 @@
-/* eslint-disable no-console */
 import axios from 'axios';
 import url from 'url';
 import { promises as fsp } from 'fs';
 import path from 'path';
 import cheerio from 'cheerio';
-import prettier from 'prettier';
 // import debug from 'debug';
 // import 'axios-debug-log';
 import Listr from 'listr';
@@ -46,10 +44,6 @@ const isRelativePath = (link) => {
 const isLocalResource = (address, link) => {
   const { host } = url.parse(link, true);
   const { host: rootHost } = url.parse(address, true);
-  console.log('isLocalResource address', address);
-  console.log('isLocalResource rootHost', rootHost);
-  console.log('isLocalResource link', link);
-  console.log('isLocalResource HOST', host);
   return host === rootHost;
 };
 
@@ -87,7 +81,6 @@ const modifyHtml = (html, resourcesDirectoryName, address) => {
     const link = $(tag).attr(attribute);
     changeAttributeValue(tag, link, attribute);
   });
-  // const formattedHtml = prettier.format($.html(), { parser: 'html', requirePragma: true });
   return $.html();
 };
 
@@ -109,32 +102,20 @@ const getLinks = (html, address) => {
     .map((link) => createAbsolutelyPath(address, link));
   const otherLinks = linksElements
     .map(({ attribs }) => attribs.href)
-    .filter((link) => {
-      console.log('getLINKS___OTHER', link);
-      console.log('getLINKS___OTHER', address);
-      console.log('getLINKS isLocalResource(address, link)', isLocalResource(address, link));
-      console.log('getLINKS isRelativePath(link)', isRelativePath(link));
-      return isRelativePath(link) || isLocalResource(address, link);
-    })
+    .filter((link) => isRelativePath(link) || isLocalResource(address, link))
     .map((link) => createAbsolutelyPath(address, link));
   const sharedLinks = [...imagesLinks, ...scriptsLinks, ...otherLinks];
-  console.log('otherLinks', otherLinks);
   return sharedLinks;
 };
 
-const downloadAsset = (link, directoryPath, resourceName) => {
-  console.log('downloadAsset____link', link);
-  console.log('!downloadAsset___resourceName', resourceName);
-  return axios({
-    method: 'get',
-    url: link,
-    responseType: link.search(imageExtentsions) > 0 ? 'arraybuffer' : 'text',
-  }).then(({ data }) => {
-    const resourcePath = getPath(directoryPath, resourceName);
-    console.log('resourcePath', resourcePath);
-    return fsp.writeFile(resourcePath, data);
-  });
-};
+const downloadAsset = (link, directoryPath, resourceName) => axios({
+  method: 'get',
+  url: link,
+  responseType: link.search(imageExtentsions) > 0 ? 'arraybuffer' : 'text',
+}).then(({ data }) => {
+  const resourcePath = getPath(directoryPath, resourceName);
+  return fsp.writeFile(resourcePath, data);
+});
 
 const downloadPage = (address, downloadDirectory) => {
   const rootName = createName(address);

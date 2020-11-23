@@ -14,24 +14,33 @@ axios.defaults.adapter = httpAdapter;
 nock.disableNetConnect();
 
 const getFilePath = (fileName) => path.join(__dirname, '..', '__fixtures__', fileName);
-const readFile = (filePath) => fsp.readFile(filePath, 'utf8');
-const url = 'https://www.drive.ru';
-const fakeUrl2 = 'https://www.drive.ru/cvxa';
-const responseHtml = readFile(getFilePath('responce.html'));
-const imageJpg = readFile(getFilePath('img.jpg'));
-const resultHtml = readFile(getFilePath('result.html'));
+const url = 'https://ru.hexlet.io/courses';
+const fakeUrl2 = 'https://ru.hexlet.io/courses/cvxa';
+const responseHtml = fsp.readFile(getFilePath('responce.html'), 'utf8');
+const imageJpg = fsp.readFile(getFilePath('img.png'));
+const resultHtml = fsp.readFile(getFilePath('result.html'), 'utf8');
+const styleCss = fsp.readFile(getFilePath('style.css'), 'utf8');
+const scriptJs = fsp.readFile(getFilePath('script.js'), 'utf8');
 let tempDir;
 let responce;
 let expected;
 let img;
+let style;
+let script;
 
 beforeEach(async () => {
   tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'page-loader-'));
   await responseHtml.then((data) => {
     responce = data;
   });
+  await styleCss.then((data) => {
+    style = data;
+  });
+  await scriptJs.then((data) => {
+    script = data;
+  });
   await imageJpg.then((data) => {
-    img = Buffer.from(data);
+    img = data;
   });
   await resultHtml.then((data) => {
     expected = data;
@@ -39,51 +48,42 @@ beforeEach(async () => {
 });
 
 test('fetchData', async () => {
-  nock('https://www.drive.ru')
-    .get('/')
+  nock('https://ru.hexlet.io')
+    .persist()
+    .get('/courses')
     .reply(200, responce)
-    .get('/img/3.jpeg')
+    .get('/assets/professions/nodejs.png')
     .reply(200, img)
-    .get('/img/4.jpg')
-    .reply(200, img)
-    .get('/img/5.png')
-    .reply(200, img)
-    .get('/img/6.gif')
-    .reply(200, img)
-    .get('/img/7.svg')
-    .reply(200, img)
-    .get('/img/8.webp')
-    .reply(200, img)
-    .get('/css/likely.css')
-    .reply(200, 'someCode')
-    .get('/css/likely.css')
-    .reply(200, 'some css code')
-    .get('/js/adfox.asyn.code.ver3.js')
-    .reply(200, 'some js code')
-    .get('/js/jquery.fancybox.min.js')
-    .reply(200, 'some js code');
+    .get('/packs/js/runtime.js')
+    .reply(200, script)
+    .get('/assets/application.css')
+    .reply(200, style);
   await downloadPage(url, tempDir);
-  const [fileName] = await fsp.readdir(tempDir);
-  const data = await fsp.readFile(path.join(tempDir, fileName), 'utf-8');
-  const files = await fsp.readdir(tempDir);
-  const [, resourcesDirectory] = files;
-  const resourcesDirectoryPath = `${tempDir}/${resourcesDirectory}`;
-  const resources = await fsp.readdir(resourcesDirectoryPath);
-  expect(resources).toHaveLength(9);
-  expect(files).toHaveLength(2);
-  expect(data).toEqual(expected);
+  const [htmlFile, assetsDirectory] = await fsp.readdir(tempDir);
+  const htmlData = await fsp.readFile(path.join(tempDir, htmlFile), 'utf-8');
+  const assetsDirectoryPath = `${tempDir}/${assetsDirectory}`;
+  const [styleFile, imgFile, aboutFile, scriptFile] = await fsp.readdir(assetsDirectoryPath);
+  const styleFileData = await fsp.readFile(path.join(assetsDirectoryPath, styleFile), 'utf-8');
+  const imgFileData = await fsp.readFile(path.join(assetsDirectoryPath, imgFile));
+  const aboutFileData = await fsp.readFile(path.join(assetsDirectoryPath, aboutFile), 'utf-8');
+  const scriptFileData = await fsp.readFile(path.join(assetsDirectoryPath, scriptFile), 'utf-8');
+  await expect(styleFileData).toBe(style);
+  await expect(imgFileData).toEqual(img);
+  await expect(aboutFileData).toBe(responce);
+  await expect(scriptFileData).toBe(script);
+  expect(htmlData).toEqual(expected);
 });
 
 test('the fetch fails with an error', async () => {
-  nock('https://www.drive.ru')
-    .get('/cvxa')
+  nock('https://ru.hexlet.io')
+    .get('/courses/cvxa')
     .reply(404);
   await expect(downloadPage(fakeUrl2, tempDir)).rejects.toThrow('Request failed with status code 404');
 });
 
 test('specifying a nonexistent directory as the page download directory', async () => {
-  nock('https://www.drive.ru')
-    .get('/')
+  nock('https://ru.hexlet.io')
+    .get('/courses')
     .reply(200, responce);
   await expect(downloadPage(url, 'tmp/dir')).rejects.toThrow();
 });
