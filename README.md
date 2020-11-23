@@ -15,7 +15,7 @@ The same principle applies to saving pages in the browser
 
 ### How to use:
 1. run the command "page-loader -h" to display reference information
-2. run the command "page-loader **web page address** **download directory** to download a web-page
+2. run the command "page-loader <**web page address**> <**download directory**>" to download a web-page
 
 
 ### Example of use:
