@@ -111,7 +111,7 @@ const getLinks = (html, address) => {
 const downloadAsset = (link, directoryPath, resourceName) => axios({
   method: 'get',
   url: link,
-  responseType: link.search(imageExtentsions) > 0 ? 'arraybuffer' : 'text',
+  responseType: link.search(imageExtentsions) > 0 ? 'arraybuffer' : 'json',
 }).then(({ data }) => {
   const resourcePath = getPath(directoryPath, resourceName);
   return fsp.writeFile(resourcePath, data);

@@ -9,4 +9,20 @@ PageLoader is a command-line utility that downloads pages from the Internet and 
 
 The same principle applies to saving pages in the browser
 
-Example of use:
+### How to install:
+1. clone this repo
+2. run "npm link"
+
+### How to use:
+1. run the command "page-loader -h" to display reference information
+2. run the command "page-loader **web page address** **download directory** to download a web-page
+
+
+### Example of use:
+[![asciicast](https://asciinema.org/a/bDaA4Vchs3VX6rWc9IsbwcplL.svg)](https://asciinema.org/a/bDaA4Vchs3VX6rWc9IsbwcplL)
+
+### Example of errors:
+[![asciicast](https://asciinema.org/a/KSjQORnYsnzXzkQWEPfTrVJB8.svg)](https://asciinema.org/a/KSjQORnYsnzXzkQWEPfTrVJB8)
+
+### Example of pageloader with debug:
+[![asciicast](https://asciinema.org/a/ABHYSAKwBrPBBgBtPbEJrBHoA.svg)](https://asciinema.org/a/ABHYSAKwBrPBBgBtPbEJrBHoA)
