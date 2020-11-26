@@ -34,71 +34,70 @@ const buildAssetName = (rootAddress, link) => {
 
 const modifyName = (name, value) => name.concat(value);
 
-const createAbsolutelyPath = (rootAddress, link) => {
-  const { href } = new URL(link, rootAddress);
-  return href;
-};
-
-const isLocalAsset = (rootAddress, link) => {
-  const { host: rootHost } = new URL(rootAddress);
-  const { host: assetHost } = new URL(link, rootAddress);
-  return rootHost === assetHost;
-};
-
 const getPageData = (html, rootAddress, assetsDirectoryName) => {
+  const links = [];
   const $ = cheerio.load(html, {
     normalizeWhitespace: true,
     decodeEntities: false,
   });
-
-  const changeAttributeValue = (tagElement, ref, property) => {
-    const assetName = buildAssetName(rootAddress, ref);
-    $(tagElement).attr(property, getPath(assetsDirectoryName, assetName));
+  const mapping = {
+    link: 'href',
+    img: 'src',
+    script: 'src',
   };
+  const { host: rootHost } = new URL(rootAddress);
 
-  const links = [];
+  // Object.entries(mapping)
+  //   .forEach(([tagName, attributeName]) => {
+  //     const elements = $(tagName).toArray();
+  //     elements
+  //       .map(({ attribs }, index) => attribs[attributeName])
+  //       .map((link) => {
+  //         // console.log('maaaaaaaaaaaaaaaap Link', link);
+  //         return new URL(link, rootAddress);
+  //       })
+  //       .filter(({ host }) => {
+  //         return host === rootHost;
+  //       })
+  //       .map(({ href }) => href)
+  //       .forEach((link) => {
+  //         // console.log('!!!!!!!!!!!!link', link);
+  //         links.push(link);
+  //         const assetName = buildAssetName(rootAddress, link);
+  //         $(tagName).attr(attributeName, path.join(assetsDirectoryName, assetName));
+  //       });
+  //   });
 
-  $('link').each((i, tag) => {
-    const attribute = 'href';
-    const link = $(tag).attr(attribute);
-    if (isLocalAsset(rootAddress, link)) {
-      const modifiedLink = createAbsolutelyPath(rootAddress, link);
-      links.push(modifiedLink);
-      changeAttributeValue(tag, link, attribute);
-    }
-  });
+  Object.entries(mapping)
+    .forEach(([tagName, attributeName]) => {
+      const elements = $(tagName).toArray();
+      elements
+        .map(({ attribs }, index) => ({ link: attribs[attributeName], index }))
+        .map(({ link, index }) => {
+          // console.log('maaaaaaaaaaaaaaaap Link', link);
+          const { host, href } = new URL(link, rootAddress);
+          return { href, host, index };
+        })
+        .filter(({ host }) => host === rootHost)
+        .forEach(({ href, index }) => {
+          // console.log('!!!!!!!!!!!!link', link);
+          links.push(href);
+          const assetName = buildAssetName(rootAddress, href);
+          $(elements[index]).attr(attributeName, path.join(assetsDirectoryName, assetName));
+        });
+    });
 
-  $('script').each((i, tag) => {
-    const attribute = 'src';
-    const link = $(tag).attr(attribute);
-    if (isLocalAsset(rootAddress, link)) {
-      const modifiedLink = createAbsolutelyPath(rootAddress, link);
-      links.push(modifiedLink);
-      changeAttributeValue(tag, link, attribute);
-    }
-  });
-
-  $('img').each((i, tag) => {
-    const attribute = 'src';
-    const link = $(tag).attr(attribute);
-    if (isLocalAsset(rootAddress, link)) {
-      const modifiedLink = createAbsolutelyPath(rootAddress, link);
-      links.push(modifiedLink);
-      changeAttributeValue(tag, link, attribute);
-    }
-  });
+  // console.log('links', links);
 
   return { html: $.html(), links };
 };
 
-const downloadAsset = (link, directoryPath, assetName) => axios({
-  method: 'get',
-  url: link,
-  responseType: 'arraybuffer',
-}).then(({ data }) => {
-  const assetPath = getPath(directoryPath, assetName);
-  return fsp.writeFile(assetPath, data);
-});
+const downloadAsset = (link, directoryPath, assetName) => axios
+  .get(link, { responseType: 'arraybuffer' })
+  .then(({ data }) => {
+    const assetPath = getPath(directoryPath, assetName);
+    return fsp.writeFile(assetPath, data);
+  });
 
 const downloadPage = (address, outputDirectory) => {
   const rootName = buildName(address);
@@ -113,8 +112,6 @@ const downloadPage = (address, outputDirectory) => {
   return axios.get(address)
     .then(({ data }) => {
       pageData = getPageData(data, address, assetsDirectoryName);
-    })
-    .then(() => {
       log(`creating an html file: ${htmlPath}`);
       return fsp.writeFile(htmlPath, pageData.html);
     })

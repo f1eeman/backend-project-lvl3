@@ -1,5 +1,5 @@
-![Node.js CI](https://github.com/f1eeman/backend-project-lvl3/workflows/Node.js%20CI/badge.svg?branch=main)
-![hexlet-check](https://github.com/f1eeman/backend-project-lvl3/workflows/hexlet-check/badge.svg)
+[![Node.js CI](https://github.com/f1eeman/backend-project-lvl3/workflows/Node.js%20CI/badge.svg?branch=main)](https://github.com/f1eeman/backend-project-lvl3/actions?query=workflow%3A%22Node.js+CI%22)
+[![hexlet-check](https://github.com/f1eeman/backend-project-lvl3/workflows/hexlet-check/badge.svg)](https://github.com/f1eeman/backend-project-lvl3/actions?query=workflow%3Ahexlet-check)
 [![Maintainability](https://api.codeclimate.com/v1/badges/69ac0046fcecbdfbfdc4/maintainability)](https://codeclimate.com/github/f1eeman/backend-project-lvl3/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/69ac0046fcecbdfbfdc4/test_coverage)](https://codeclimate.com/github/f1eeman/backend-project-lvl3/test_coverage)
 
