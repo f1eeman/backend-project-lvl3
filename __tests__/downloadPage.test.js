@@ -7,83 +7,108 @@ import nock from 'nock';
 import { promises as fsp } from 'fs';
 import downloadPage from '../src/index.js';
 
+axios.defaults.adapter = httpAdapter;
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
-axios.defaults.adapter = httpAdapter;
-nock.disableNetConnect();
-
 const getFilePath = (fileName) => path.join(__dirname, '..', '__fixtures__', fileName);
-const url = 'https://ru.hexlet.io/courses';
-const fakeUrl2 = 'https://ru.hexlet.io/courses/cvxa';
-const responseHtml = fsp.readFile(getFilePath('responce.html'), 'utf8');
-const imageJpg = fsp.readFile(getFilePath('img.png'));
-const resultHtml = fsp.readFile(getFilePath('result.html'), 'utf8');
-const styleCss = fsp.readFile(getFilePath('style.css'), 'utf8');
-const scriptJs = fsp.readFile(getFilePath('script.js'), 'utf8');
-let tempDir;
-let responce;
-let expected;
-let img;
-let style;
-let script;
 
-beforeEach(async () => {
-  tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'page-loader-'));
-  await responseHtml.then((data) => {
-    responce = data;
+const baseUrl = 'https://ru.hexlet.io';
+const requestUrl = 'https://ru.hexlet.io/courses';
+const scope = nock(baseUrl).persist();
+
+describe('Positive tests', () => {
+  const resources = [
+    {
+      name: 'style',
+      format: 'css',
+      urlPath: /css/,
+      fileName: 'ru-hexlet-io-assets-application.css',
+    },
+    {
+      name: 'script',
+      format: 'js',
+      urlPath: /js/,
+      fileName: 'ru-hexlet-io-packs-js-runtime.js',
+    },
+    // {
+    //   name: 'img',
+    //   format: 'png',
+    //   urlPath: /png/,
+    //   fileName: 'ru-hexlet-io-assets-professions-nodejs.png',
+    // },
+    {
+      name: 'page',
+      format: 'html',
+      urlPath: '/courses',
+      fileName: 'ru-hexlet-io-courses.html',
+    },
+  ];
+
+  let content;
+  let tempDir;
+  let expected;
+
+  beforeAll(async () => {
+    nock.disableNetConnect();
+
+    expected = await fsp.readFile(getFilePath('expected.html'), 'utf8');
+
+    const promises = resources.map(async (resource) => {
+      const encoding = resource.name === 'img' ? null : 'utf8';
+      const data = await fsp.readFile(getFilePath(`${resource.name}.${resource.format}`), encoding);
+      const { name } = resource;
+      // console.log(name, data);
+      return { name, data };
+    });
+
+    content = await Promise.all(promises);
+
+    resources.forEach((resource) => {
+      const currentContent = content.find(({ name }) => name === resource.name);
+      scope.get(resource.urlPath).reply(200, currentContent.data);
+    });
+
+    tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'page-loader-'));
+    await downloadPage(requestUrl, tempDir);
   });
-  await styleCss.then((data) => {
-    style = data;
+
+  test('fetchData', async () => {
+    const [htmlFile] = await fsp.readdir(tempDir);
+    const htmlData = await fsp.readFile(path.join(tempDir, htmlFile), 'utf-8');
+    expect(htmlData).toEqual(expected);
   });
-  await scriptJs.then((data) => {
-    script = data;
-  });
-  await imageJpg.then((data) => {
-    img = data;
-  });
-  await resultHtml.then((data) => {
-    expected = data;
+
+  test.each(resources)('resource %s', async (resource) => {
+    const [, assetsDirectory] = await fsp.readdir(tempDir);
+    const assetsDirectoryPath = `${tempDir}/${assetsDirectory}`;
+    const encoding = resource.name === 'img' ? null : 'utf8';
+    const data = await fsp.readFile(path.join(assetsDirectoryPath, resource.fileName), encoding);
+    const currentContent = content.find(({ name }) => name === resource.name);
+    // console.log('currentContent', currentContent);
+    // console.log('resource', resource);
+    expect(data).toEqual(currentContent.data);
   });
 });
 
-test('fetchData', async () => {
-  nock('https://ru.hexlet.io')
-    .persist()
-    .get('/courses')
-    .reply(200, responce)
-    .get('/assets/professions/nodejs.png')
-    .reply(200, img)
-    .get('/packs/js/runtime.js')
-    .reply(200, script)
-    .get('/assets/application.css')
-    .reply(200, style);
-  await downloadPage(url, tempDir);
-  const [htmlFile, assetsDirectory] = await fsp.readdir(tempDir);
-  const htmlData = await fsp.readFile(path.join(tempDir, htmlFile), 'utf-8');
-  const assetsDirectoryPath = `${tempDir}/${assetsDirectory}`;
-  const [styleFile, imgFile, aboutFile, scriptFile] = await fsp.readdir(assetsDirectoryPath);
-  const styleFileData = await fsp.readFile(path.join(assetsDirectoryPath, styleFile), 'utf-8');
-  const imgFileData = await fsp.readFile(path.join(assetsDirectoryPath, imgFile));
-  const aboutFileData = await fsp.readFile(path.join(assetsDirectoryPath, aboutFile), 'utf-8');
-  const scriptFileData = await fsp.readFile(path.join(assetsDirectoryPath, scriptFile), 'utf-8');
-  await expect(styleFileData).toBe(style);
-  await expect(imgFileData).toEqual(img);
-  await expect(aboutFileData).toBe(responce);
-  await expect(scriptFileData).toBe(script);
-  expect(htmlData).toEqual(expected);
-});
+describe('Negative tests', () => {
+  const fakeUrl = 'https://ru.hexlet.io/courses/cvxa';
+  let tempDir;
 
-test('the fetch fails with an error', async () => {
-  nock('https://ru.hexlet.io')
-    .get('/courses/cvxa')
-    .reply(404);
-  await expect(downloadPage(fakeUrl2, tempDir)).rejects.toThrow('Request failed with status code 404');
-});
+  beforeEach(async () => {
+    tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'page-loader-'));
+  });
 
-test('specifying a nonexistent directory as the page download directory', async () => {
-  nock('https://ru.hexlet.io')
-    .get('/courses')
-    .reply(200, responce);
-  await expect(downloadPage(url, 'tmp/dir')).rejects.toThrow();
+  test('the fetch fails with an error', async () => {
+    nock('https://ru.hexlet.io')
+      .get('/courses/cvxa')
+      .reply(404);
+    const files = await fsp.readdir(tempDir);
+    await expect(downloadPage(fakeUrl, tempDir)).rejects.toThrow(/404/);
+    expect(files).toHaveLength(0);
+  });
+
+  test('specifying a nonexistent directory as the page download directory', async () => {
+    await expect(downloadPage(requestUrl, '/tmp/dir')).rejects.toThrow('ENOENT');
+  });
 });
