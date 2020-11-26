@@ -20,10 +20,16 @@ const scope = nock(baseUrl).persist();
 describe('Positive tests', () => {
   const resources = [
     {
-      name: 'style',
-      format: 'css',
-      urlPath: /css/,
-      fileName: 'ru-hexlet-io-assets-application.css',
+      name: 'page',
+      format: 'html',
+      urlPath: '/courses',
+      fileName: 'ru-hexlet-io-courses.html',
+    },
+    {
+      name: 'img',
+      format: 'png',
+      urlPath: /png/,
+      fileName: 'ru-hexlet-io-assets-professions-nodejs.png',
     },
     {
       name: 'script',
@@ -31,17 +37,11 @@ describe('Positive tests', () => {
       urlPath: /js/,
       fileName: 'ru-hexlet-io-packs-js-runtime.js',
     },
-    // {
-    //   name: 'img',
-    //   format: 'png',
-    //   urlPath: /png/,
-    //   fileName: 'ru-hexlet-io-assets-professions-nodejs.png',
-    // },
     {
-      name: 'page',
-      format: 'html',
-      urlPath: '/courses',
-      fileName: 'ru-hexlet-io-courses.html',
+      name: 'style',
+      format: 'css',
+      urlPath: /css/,
+      fileName: 'ru-hexlet-io-assets-application.css',
     },
   ];
 
