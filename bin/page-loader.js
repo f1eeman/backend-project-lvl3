@@ -21,8 +21,10 @@ program.parseAsync(process.argv).then(() => {
   const [result] = program._actionResults;
   return result;
 })
-  .then((fileName) => console.log(`\nPage was downloaded as '${fileName}'`))
-  .then(() => process.exit(0))
+  .then((fileName) => {
+    console.log(`\nPage was downloaded as '${fileName}'`);
+    process.exit(0);
+  })
   .catch((error) => {
     console.error('Oops! Something went wrong');
     if (error.isAxiosError) {
