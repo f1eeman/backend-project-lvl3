@@ -1,3 +1,4 @@
+import _ from 'lodash';
 import { promises as fsp } from 'fs';
 import path from 'path';
 import axios from 'axios';
@@ -7,7 +8,6 @@ import debug from 'debug';
 import 'axios-debug-log';
 
 const log = debug('page-loader:');
-const noop = () => {};
 
 const buildName = (link) => {
   const { pathname, host } = new URL(link);
@@ -90,7 +90,7 @@ const downloadPage = (address, outputDirectory = process.cwd()) => {
         title: link,
         task: () => {
           const assetName = buildAssetName(address, link);
-          return downloadAsset(link, assetsDirectoryPath, assetName).catch(noop);
+          return downloadAsset(link, assetsDirectoryPath, assetName).catch(_.noop);
         },
       }));
       const listr = new Listr(tasks, { concurrent: true });
