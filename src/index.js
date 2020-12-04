@@ -90,7 +90,7 @@ const downloadPage = (address, outputDirectory = process.cwd()) => {
         title: link,
         task: () => {
           const assetName = buildAssetName(address, link);
-          log(`downloading page's asset: ${assetName}`);
+          log(`asset: ${assetName}, ${link}`);
           return downloadAsset(link, assetsDirectoryPath, assetName).catch(_.noop);
         },
       }));
