@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-disable no-console */
 
 import program from 'commander';
 import downloadPage from '../src/index.js';
@@ -16,14 +15,7 @@ program
     })
     .catch((error) => {
       console.error('Oops! Something went wrong');
-      if (error.isAxiosError) {
-        const { response } = error;
-        console.error('status-code: ', response.status);
-        console.log('status-text: ', response.statusText);
-        console.log('error.message: ', error.message);
-      } else {
-        console.error(error);
-      }
+      console.error(error.message);
       process.exit(1);
     }));
 

@@ -11,7 +11,8 @@ The same principle applies to saving pages in the browser
 
 ### How to install:
 1. clone this repo
-2. run "npm link"
+2. install dependencies (npm install)
+3. run "npm link"
 
 ### How to use:
 1. run the command "page-loader -h" to display reference information

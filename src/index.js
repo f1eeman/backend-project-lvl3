@@ -13,16 +13,16 @@ const buildName = (link) => {
   const { pathname, host } = new URL(link);
   const fileName = `${host}${pathname}`
     .split(/[^\w+]/gi)
+    .filter((el) => el !== '')
     .join('-');
   return fileName;
 };
 
 const buildAssetName = (rootAddress, link) => {
-  const extName = path.extname(link);
-  const [linkWithoutExtName] = link.match(new RegExp(`.+(?=${extName})`));
-  const name = buildName(new URL(linkWithoutExtName, rootAddress));
-  const nameWithExtName = name.concat(extName || '.html');
-  return nameWithExtName;
+  const { dir, name, ext } = path.parse(link);
+  const assetNameWithoutExtName = buildName(new URL(`${dir}/${name}`, rootAddress));
+  const assetNameWithExtName = assetNameWithoutExtName.concat(ext || '.html');
+  return assetNameWithExtName;
 };
 
 const getPageData = (html, rootAddress, assetsDirectoryName) => {
@@ -90,6 +90,7 @@ const downloadPage = (address, outputDirectory = process.cwd()) => {
         title: link,
         task: () => {
           const assetName = buildAssetName(address, link);
+          log(`downloading page's asset: ${assetName}`);
           return downloadAsset(link, assetsDirectoryPath, assetName).catch(_.noop);
         },
       }));
